@@ -1,0 +1,92 @@
+blueprint:
+  name: Cinema light brightness
+  description: Adjust light brightness when media is playing/paused/stopped
+  domain: automation
+  source_url: https://github.com/home-assistant/core/blob/dev/homeassistant/components/automation/blueprints/motion_light.yaml
+  input:
+    media_player_entity:
+      name: Media Player
+      selector:
+        entity:
+          domain: media_player
+    light_entity:
+      name: Light
+      selector:
+        entity:
+          domain: light
+    paused_brightness:
+      name: Paused light brightness
+      description: Light brightness when media is paused/stopped
+      default: 100
+      selector:
+        number:
+          min: 0
+          max: 100
+          unit_of_measurement: "%"
+          mode: slider
+          step: 1
+    paused_transition:
+      name: Paused light brightness transition
+      description: Light brightness transition when media is paused/stopped
+      default: 10
+      selector:
+        number:
+          min: 0
+          max: 30
+          unit_of_measurement: seconds
+          mode: slider
+          step: 1
+    playing_brightness:
+      name: Playing light brightness
+      description: Light brightness when media is playing
+      default: 10
+      selector:
+        number:
+          min: 0
+          max: 100
+          unit_of_measurement: "%"
+          mode: slider
+          step: 1
+    playing_transition:
+      name: Playing light brightness transition
+      description: Light brightness transition when media is playing
+      default: 1
+      selector:
+        number:
+          min: 0
+          max: 30
+          unit_of_measurement: seconds
+          mode: slider
+          step: 1
+mode: restart
+trigger:
+  - platform: state
+    entity_id: !input media_player_entity
+    from: playing
+  - platform: state
+    entity_id: !input media_player_entity
+    to: playing
+  - platform: state
+    entity_id: !input light_entity
+condition:
+  - condition: state
+    entity_id: !input light_entity
+    state: 'on'
+action:
+  - choose:
+      - conditions:
+          - condition: state
+            entity_id: !input media_player_entity
+            state: playing
+        sequence:
+          - service: light.turn_on
+            data:
+              brightness_pct: !input playing_brightness
+              transition: !input playing_transition
+            entity_id: !input light_entity
+    default:
+      - service: light.turn_on
+        data:
+          brightness_pct: !input paused_brightness
+          transition: !input paused_transition
+        entity_id: !input light_entity
